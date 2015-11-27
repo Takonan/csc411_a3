@@ -1,6 +1,10 @@
 # csc411_a3
 Using machine learning to classify facial expression.
 
+## Stuff to try
+1. Mirror the training data for double the amount of training data. Mirror it horrizontally before flattening it into 1D (1024) array. 
+2. Implement ELM with python-ELM and use bagging
+
 ##File descriptions
 
 You should use only "labeled_images.mat" and "unlabeled_images.mat" to learn your model. Then you should apply your learned model on public_test_images.mat in order to generate a submission.
