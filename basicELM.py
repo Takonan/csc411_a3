@@ -37,9 +37,10 @@ def elmclass_list(size):
     for n in xrange(val_len):
         #print predict_list[n, :], predict_list[n, :].dtype
         agg_pred[n] = (np.bincount(predict_list[n, :])).argmax()
-    print train_in.shape, val_tar.shape 
+    print train_in.shape, val_tar.shape
+    print agg_pred, val_tar
     accuracy = np.count_nonzero(np.equal(agg_pred, val_tar))
-    print 'list accuracy', accuracy*1./val_len
+    print 'list accuracy', accuracy
 
 if __name__ == '__main__':
     elmclassifier()
