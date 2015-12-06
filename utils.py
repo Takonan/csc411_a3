@@ -68,6 +68,77 @@ def load_data_with_identity(include_mirror=False):
 
     return inputs, targets, identities
 
+def reload_data_with_identity_normalized():
+    """ Reloads the normalized data. Include mirror.
+    """
+    inputs = np.load('labeled_inputs_normalized.npy')
+    targets = np.load('labeled_targets_normalized.npy')
+    identities = np.load('labeled_identities_normalized.npy')
+
+    return inputs, targets, identities
+
+def load_data_with_identity_normalized(include_mirror=False):
+    """ Loads the labeled data images, targets, and identities (sorted)
+    and normalize the intensities of each image.
+    """
+    data = loadmat('labeled_images.mat')
+    images = data['tr_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
+    targets = data['tr_labels']
+    identities = data['tr_identity']
+
+    # Generate a mirrored version if necessary:
+    if include_mirror:
+        mirrored_faces = np.transpose(images, (0,2,1))
+        rotated_faces = mirrored_faces[:,:,::-1]
+        images = np.append(rotated_faces, mirrored_faces, 0)
+        identities = np.append(identities, identities,0)
+        targets = np.append(targets, targets,0)
+    else:
+        images = np.transpose(images, (0,2,1))[:,:,::-1]
+
+    # Preprocess the data to normalize intensities
+    for i in range(images.shape[0]):
+        filt = np.array([[1,2,1],[2,4,2],[1,2,1]])
+        gaussian = filt.astype(float)/filt.sum()
+        gaussian_filter = signal.convolve2d(images[i,:,:], gaussian, boundary='symm', mode='same')
+        std_filter = region_std(images[i,:,:],1)
+        final = (images[i,:,:] - gaussian_filter).astype(float)/std_filter
+        final = (((final/np.amax(final))+1)*128).astype(int)
+        images[i,:,:] = final[:,:]
+        print 'Done image ', i
+
+    # Flatten the 32x32 to 1024 1D
+    images = images.reshape(images.shape[0], images.shape[1]*images.shape[2])
+
+    # Sort the array based on the tr_identities
+    # Sort the targets
+    temp = np.append(targets,identities,1)
+    targets_sort = temp[temp[:,1].argsort()]
+    targets = targets_sort[:,0]
+
+    # Sort the images
+    temp = np.append(images,identities,1)
+    inputs_sort = temp[temp[:,-1].argsort()]
+    inputs = inputs_sort[:,0:-1]
+
+    # Return sorted identities:
+    identities = inputs_sort[:,-1]
+
+    outfile = open('labeled_inputs_normalized.npy','w')
+    np.save(outfile,inputs)
+    outfile.close()
+
+    outfile = open('labeled_targets_normalized.npy','w')
+    np.save(outfile,targets)
+    outfile.close()
+
+    outfile = open('labeled_identities_normalized.npy','w')
+    np.save(outfile,identities)
+    outfile.close()
+
+    return inputs, targets, identities
+
+
 def load_data(include_mirror=False):
     data = loadmat('labeled_images.mat')
     images = data['tr_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32

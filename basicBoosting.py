@@ -52,9 +52,13 @@ def run_ExtremeRandFor(include_mirror=False):
     print scores.mean()
 
 def run_RandFor(include_mirror=False):
-    train_inputs, train_targets, valid_inputs, valid_targets = load_data(include_mirror)
+    # train_inputs, train_targets, valid_inputs, valid_targets = load_data(include_mirror)
+    inputs, targets, identities = load_data_with_identity(False)
+    # inputs, targets, identities = reload_data_with_identity_normalized()
+    lkf = LabelKFold(identities, n_folds=10)
     clf = RandomForestClassifier(n_estimators=100, max_depth=None, min_samples_split=1, random_state=0, n_jobs=-1)
-    scores = cross_val_score(clf, train_inputs, train_targets, n_jobs=-1)
+    scores = cross_val_score(clf, inputs, targets, n_jobs=-1, cv=lkf)
+    print scores
     print scores.mean()
 
 def run_Bagging(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False, reload=False):
@@ -64,9 +68,9 @@ def run_Bagging(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False,
         train_inputs, train_targets, valid_inputs, valid_targets, test_inputs, test_targets = reload_data_with_test_normalized()
     # myClassifier = LinearSVC()
     # myClassifier = RidgeClassifier()
-    # myClassifier = Perceptron(n_iter=num_iter)
+    myClassifier = Perceptron(n_iter=num_iter)
     # myClassifier = SGDClassifier(loss='perceptron',n_iter=num_iter)
-    myClassifier = OneVsRestClassifier(LinearSVC(random_state=0))
+    # myClassifier = OneVsRestClassifier(LinearSVC(random_state=0))
     # clf = BaggingClassifier(base_estimator=myClassifier, n_estimators=num_estimator, n_jobs=-1)
 
     if do_cv:
@@ -83,6 +87,28 @@ def run_Bagging(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False,
         return score
 
     return
+
+def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, reload=False):
+    if not reload:
+        inputs, targets, identities = load_data_with_identity(include_mirror)
+    else:
+        inputs, targets, identities = reload_data_with_identity_normalized()
+
+    # myClassifier = LinearSVC()
+    # myClassifier = RidgeClassifier()
+    myClassifier = Perceptron(n_iter=num_iter)
+    # myClassifier = SGDClassifier(loss='perceptron',n_iter=num_iter)
+    # myClassifier = OneVsRestClassifier(LinearSVC(random_state=0))
+    clf = BaggingClassifier(base_estimator=myClassifier, n_estimators=num_estimator)
+
+    lkf = LabelKFold(identities, n_folds=10)
+
+    scores = cross_val_score(clf, inputs, targets, n_jobs=-1, cv=lkf)
+    print scores
+    print scores.mean()
+
+    return scores.mean()
+
 
 def pca_SVM(normalized_intensity=False, ratio=0.25):
     if not normalized_intensity:
@@ -148,7 +174,7 @@ if __name__ == '__main__':
     # print "Running classification algorithms with original training data set:"
     # # run_AdaBoost()
     # # run_ExtremeRandFor()
-    # # run_RandFor()
+    # run_RandFor()
     # start = time.time()
     # run_Bagging()
     # elasped = time.time() - start
@@ -162,10 +188,9 @@ if __name__ == '__main__':
     # elasped = time.time() - start
     # print "Elasped time: ", elasped
 
+    for num_estimator in [50]: #[10, 25, 50]:
+        for num_iter in [15]: #[5, 10, 25, 50]:
+            print "Original Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, False, False))
+            print "Original + Mirrored Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, True, False))
 
-    # for num_estimator in [1]: #[10, 25, 50]:
-    #     for num_iter in [15]: #[5, 10, 25, 50]:
-    #         # print "Original Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging(num_estimator, num_iter, False, False))
-    #         print "Original + Mirrored Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging(num_estimator, num_iter, True, False, True))
-
-    pca_SVM()
+    # pca_SVM()
