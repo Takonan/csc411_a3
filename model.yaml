@@ -1,0 +1,25 @@
+"class_mode: categorical\nlayers:\n- W_constraint: null\n  W_regularizer: null\n \
+  \ activation: linear\n  activity_regularizer: null\n  b_constraint: null\n  b_regularizer:\
+  \ null\n  border_mode: valid\n  dim_ordering: th\n  init: glorot_uniform\n  input_shape:\
+  \ !!python/tuple [1, 32, 32]\n  name: Convolution2D\n  nb_col: 3\n  nb_filter: 5\n\
+  \  nb_row: 3\n  subsample: &id001 !!python/tuple [1, 1]\n- {activation: relu, beta:\
+  \ 0.1, name: Activation, target: 0}\n- W_constraint: null\n  W_regularizer: null\n\
+  \  activation: linear\n  activity_regularizer: null\n  b_constraint: null\n  b_regularizer:\
+  \ null\n  border_mode: valid\n  dim_ordering: th\n  init: glorot_uniform\n  name:\
+  \ Convolution2D\n  nb_col: 3\n  nb_filter: 5\n  nb_row: 3\n  subsample: *id001\n\
+  - {activation: relu, beta: 0.1, name: Activation, target: 0}\n- border_mode: valid\n\
+  \  dim_ordering: th\n  name: MaxPooling2D\n  pool_size: &id002 !!python/tuple [2,\
+  \ 2]\n  strides: *id002\n- {name: Dropout, p: 0.25}\n- {name: Flatten}\n- {W_constraint:\
+  \ null, W_regularizer: null, activation: linear, activity_regularizer: null,\n \
+  \ b_constraint: null, b_regularizer: null, init: glorot_uniform, input_dim: null,\n\
+  \  name: Dense, output_dim: 128}\n- {activation: relu, beta: 0.1, name: Activation,\
+  \ target: 0}\n- {name: Dropout, p: 0.5}\n- {W_constraint: null, W_regularizer: null,\
+  \ activation: linear, activity_regularizer: null,\n  b_constraint: null, b_regularizer:\
+  \ null, init: glorot_uniform, input_dim: null,\n  name: Dense, output_dim: 64}\n\
+  - {activation: relu, beta: 0.1, name: Activation, target: 0}\n- {name: Dropout,\
+  \ p: 0.5}\n- {W_constraint: null, W_regularizer: null, activation: linear, activity_regularizer:\
+  \ null,\n  b_constraint: null, b_regularizer: null, init: glorot_uniform, input_dim:\
+  \ null,\n  name: Dense, output_dim: 7}\n- {activation: softmax, beta: 0.1, name:\
+  \ Activation, target: 0}\nloss: categorical_crossentropy\nname: Sequential\noptimizer:\
+  \ {epsilon: 1.0e-06, lr: 1.0, name: Adadelta, rho: 0.949999988079071}\ntheano_mode:\
+  \ null\n"

@@ -31,6 +31,14 @@ def ShowMeans(means):
   plt.show() # HC: Added show line
   # raw_input('Press Enter.')
 
+def load_public_test():
+    """ Loads the labeled data images, targets, and identities (sorted).
+    """
+    data = loadmat('public_test_images.mat')
+    images = data['public_test_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
+    inputs = images.reshape(images.shape[0], images.shape[1]*images.shape[2])
+    return inputs
+ 
 def load_data_with_identity(include_mirror=False):
     """ Loads the labeled data images, targets, and identities (sorted).
     """

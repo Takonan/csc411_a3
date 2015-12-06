@@ -1,6 +1,10 @@
 from utils import *
+import csutils
+import theano
+import yaml
+
 import numpy as np
-from keras.models import Sequential
+from keras.models import *
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.optimizers import SGD, RMSprop
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
@@ -43,7 +47,7 @@ def build_cnn():
     model.add(Activation('softmax'))
 
     model.compile(loss='categorical_crossentropy', optimizer='adadelta')
-
+    
     return model
 
 def build_mlp():
@@ -93,17 +97,17 @@ def build_mlp():
 
     return model
 
-def main(model_type='CNN'):
+def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5'):
     inputs, targets, identities = load_data_with_identity(True)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
 
-    inputs = inputs.astype("float32")
+    inputs = inputs.astype(theano.config.floatX)
     inputs /= 255
 
     print "Loaded the data..."
 
-    lkf = LabelKFold(identities, n_folds=3)
+    lkf = LabelKFold(identities, n_folds=8)
     nn_list = []
     score_list = np.zeros(len(lkf))
     index = 0
@@ -132,6 +136,8 @@ def main(model_type='CNN'):
 
         if model_type == 'CNN':
             model = build_cnn()
+
+
         else:
             if model_type == 'MLP':
                 model = build_mlp()
@@ -144,14 +150,23 @@ def main(model_type='CNN'):
         score = model.evaluate(X_test, y_test_oneOfK,
                        show_accuracy=True, verbose=0)
         print "Score:", score
-
+        #print X_test.shape
+        #raw_input()
         pred = model.predict_classes(X_test)
         # print "Prediction: ", pred
         # print "y_test - 1: ", y_test-1
         print "Manual score", (pred == (y_test-1)).mean()
-
         score_list[index] = (pred == (y_test-1)).mean()
 
+        # Save model and weights
+        
+        yaml_string = model.to_yaml()
+        with open(model_checkpoint, 'w+') as outfile:
+            outfile.write(yaml.dump(yaml_string, default_flow_style=True))
+        if (index > 0 and score_list[index] > score_list[index-1]):
+            model.save_weights(weights_checkpoint, overwrite=True)
+        print "Saved model and weights"
+        
         nn_list.append(model)
 
         index += 1
@@ -159,9 +174,23 @@ def main(model_type='CNN'):
     # use the NN model to classify test data
     print score_list
     print score_list.mean()
-
     return nn_list
 
+def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5'):
+    model_stream = file(model_checkpoint, 'r')
+    test_model = model_from_yaml(yaml.safe_load(model_stream))
+    test_model.load_weights(weights_checkpoint)
+    x_test = load_public_test()
+    x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
+    print "Finished loading test model"
+    predictions = test_model.predict_classes(x_test)+ 1
+    print predictions
+    save_output_csv("test_predictions.csv", predictions)
+    return
+ 
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
+    #print "Using board {:d}".format(csutils.get_board())
     main('CNN')
+
+    test_model()
