@@ -6,7 +6,7 @@ from keras.optimizers import SGD, RMSprop
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
 
-from sklearn.cross_validation import cross_val_score
+#from sklearn.cross_validation import cross_val_score
 from sklearn.cross_validation import LabelKFold
 
 def build_cnn():
@@ -34,6 +34,9 @@ def build_cnn():
     model.add(Dropout(0.25))
     model.add(Flatten())
     model.add(Dense(128))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(64))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
     model.add(Dense(nb_classes))
@@ -73,19 +76,23 @@ def build_mlp():
 
     # # Here's a Deep Dumb MLP (DDMLP) # Accuacy with 3 fold labelKFold = 0.54905982906
     model = Sequential()
-    model.add(Dense(256, input_shape=(1024,), init='lecun_uniform'))
-    model.add(Activation('relu'))
+    model.add(Dense(512, input_shape=(1024,), init='lecun_uniform'))
+    model.add(Activation('tanh'))
     model.add(Dropout(0.25))
     model.add(Dense(256, init='lecun_uniform'))
-    model.add(Activation('relu'))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.25))
+    model.add(Dense(64, init='lecun_uniform'))
+    model.add(Activation('tanh'))
     model.add(Dropout(0.25))
     model.add(Dense(7, init='lecun_uniform'))
-    model.add(Activation('relu'))
+    model.add(Activation('softmax'))
 
     rms = RMSprop()
     model.compile(loss='categorical_crossentropy', optimizer=rms)
 
     return model
+
 def main(model_type='CNN'):
     inputs, targets, identities = load_data_with_identity(True)
     if model_type == 'CNN':
@@ -126,7 +133,8 @@ def main(model_type='CNN'):
         if model_type == 'CNN':
             model = build_cnn()
         else:
-            model = build_mlp()
+            if model_type == 'MLP':
+                model = build_mlp()
         # model.fit(X_train, y_train, nb_epoch=20, batch_size=100, show_accuracy=True)
         # score = model.evaluate(X_test, y_test_oneOfK, batch_size=100, show_accuracy=True)
         model.fit(X_train, y_train_oneOfK,
@@ -156,4 +164,4 @@ def main(model_type='CNN'):
 
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
-    main()
+    main('CNN')
