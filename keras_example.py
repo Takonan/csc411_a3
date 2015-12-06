@@ -47,7 +47,7 @@ def build_cnn():
     model.add(Activation('softmax'))
 
     model.compile(loss='categorical_crossentropy', optimizer='adadelta')
-    
+
     return model
 
 def build_mlp():
@@ -159,14 +159,15 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
         score_list[index] = (pred == (y_test-1)).mean()
 
         # Save model and weights
-        
+
         yaml_string = model.to_yaml()
         with open(model_checkpoint, 'w+') as outfile:
             outfile.write(yaml.dump(yaml_string, default_flow_style=True))
-        if (index > 0 and score_list[index] > score_list[index-1]):
+        # Only save the weights when the current index score is equal to the best so far
+        if (index > 0 and score_list[index] == score_list.max()):
             model.save_weights(weights_checkpoint, overwrite=True)
         print "Saved model and weights"
-        
+
         nn_list.append(model)
 
         index += 1
@@ -187,7 +188,7 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5')
     print predictions
     save_output_csv("test_predictions.csv", predictions)
     return
- 
+
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
     #print "Using board {:d}".format(csutils.get_board())
