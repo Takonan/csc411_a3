@@ -23,15 +23,22 @@ from utils import *
 import time
 
 def run_AdaBoost(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False):
-    train_inputs, train_targets, valid_inputs, valid_targets = load_data(include_mirror)
-    myClassifier = LogisticRegression()
+    # Loading data
+    # train_inputs, train_targets, valid_inputs, valid_targets = load_data(include_mirror)
+    inputs, targets, identities = load_data_with_identity(include_mirror)
+    lkf = LabelKFold(identities, n_folds=10)
+
+    # myClassifier = LogisticRegression()
     # myClassifier = Perceptron(n_iter=num_iter)
     # myClassifier = SGDClassifier(loss='perceptron',n_iter=num_iter)
-    clf = AdaBoostClassifier(base_estimator=myClassifier, n_estimators=num_estimator)
+    clf = AdaBoostClassifier(n_estimators=num_estimator)
 
     if do_cv:
         # Do cross validation
-        scores = cross_val_score(clf, train_inputs, train_targets)
+        # scores = cross_val_score(clf, train_inputs, train_targets)
+        scores = cross_val_score(clf, inputs, targets, cv=lkf)
+        print scores
+        print scores.mean()
         return scores.mean()
 
     else:
@@ -109,27 +116,44 @@ def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, r
 
     return scores.mean()
 
+def run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True):
+    inputs, targets, identities = load_data_with_identity(include_mirror)
+    x_test = load_public_test()
+
+    myClassifier = Perceptron(n_iter=num_iter)
+    clf = BaggingClassifier(base_estimator=myClassifier, n_estimators=num_estimator, n_jobs=-1)
+    clf.fit(inputs, targets)
+
+    # Predict on the training data
+    train_pred = clf.predict(inputs)
+    print classification_report(targets, train_pred)
+    # print "Done learning, now predicting"
+    # pred = clf.predict(x_test)
+    # print pred
+    # print "Saving the output test prediction"
+    # save_output_csv("Perceptron_Bagging_test_predictions.csv", pred)
+    return
 
 def pca_SVM(normalized_intensity=False, ratio=0.25):
     if not normalized_intensity:
         # Perform PCA on the unlabeled data (Not include the mirror)
         images = load_unlabeled_data()
 
-        # start = time.time()
-        # pca = PCA(n_components=images.shape[1]*ratio)
-        # unlabeled_pca = pca.fit_transform(images)
-        # elasped = time.time() - start
-        # print "Done doing PCA fit with ratio %f" % (ratio)
-        # print "It took %f seconds" % elasped
+        start = time.time()
+        pca = PCA(n_components=images.shape[1]*ratio)
+        unlabeled_pca = pca.fit_transform(images)
+        elasped = time.time() - start
+        print "Done doing PCA fit with ratio %f" % (ratio)
+        print "It took %f seconds" % elasped
 
         # Now do Kernel PCA on the unlabeled_pca
-        kpca = KernelPCA(kernel="rbf", gamma=15)
-        start = time.time()
+        # kpca = KernelPCA(kernel="rbf", gamma=15)
+        # start = time.time()
         # unlabeled_kpca = kpca.fit(unlabeled_pca)
-        unlabeled_kpca = kpca.fit(images[0:6000])
-        elasped = time.time() - start
-        print "Done Kernel PCA fit"
-        print "It took %f seconds" % elasped
+        # unlabeled_kpca = kpca.fit(images[0:6000])
+        # elasped = time.time() - start
+        # print "Done Kernel PCA fit"
+        # print "It took %f seconds" % elasped
 
         # # Perform SVM on the PCA transformed data
         # train_inputs, train_targets, valid_inputs, valid_targets, test_inputs, test_targets = load_data_with_test(True)
@@ -155,7 +179,8 @@ def pca_SVM(normalized_intensity=False, ratio=0.25):
         # print(classification_report(test_targets, test_pred))
 
         inputs, targets, identities = load_data_with_identity(True)
-        inputs = kpca.transform(inputs)
+        # inputs = kpca.transform(inputs)
+        inputs = pca.transform(inputs)
         print "Dimension of inputs:", inputs.shape
         lkf = LabelKFold(identities, n_folds=3)
         # for train_index, test_index in lkf:
@@ -171,8 +196,12 @@ def pca_SVM(normalized_intensity=False, ratio=0.25):
     return
 
 if __name__ == '__main__':
-    # print "Running classification algorithms with original training data set:"
-    # # run_AdaBoost()
+    print "Running classification algorithms with original training data set:"
+    start = time.time()
+    run_AdaBoost(num_estimator=500, include_mirror=True, do_cv=True)
+    elasped = time.time() - start
+    print "Elasped time: ", elasped
+
     # # run_ExtremeRandFor()
     # run_RandFor()
     # start = time.time()
@@ -188,9 +217,11 @@ if __name__ == '__main__':
     # elasped = time.time() - start
     # print "Elasped time: ", elasped
 
-    for num_estimator in [50]: #[10, 25, 50]:
-        for num_iter in [15]: #[5, 10, 25, 50]:
-            print "Original Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, False, False))
-            print "Original + Mirrored Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, True, False))
+    # for num_estimator in [100]: #[10, 25, 50]:
+    #     for num_iter in [25]: #[5, 10, 25, 50]:
+    #         # print "Original Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, False, False))
+    #         print "Original + Mirrored Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, True, False))
 
     # pca_SVM()
+
+    # run_Bagging_testset(num_estimator=10, num_iter=15, include_mirror=True)
