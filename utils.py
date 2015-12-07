@@ -9,6 +9,9 @@ def save_output_csv(filename, pred):
         f_result.write('Id,Prediction\n')
         for i, y in enumerate(pred, 1):
             f_result.write('{},{}\n'.format(i,y))
+        num_entries = 1253
+        for i in range(len(pred)+1, num_entries+1):
+            f_result.write('{},{}\n'.format(i,0))
     return
 
 def region_std(source,rec_size):
@@ -38,7 +41,7 @@ def load_public_test():
     images = data['public_test_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
     inputs = images.reshape(images.shape[0], images.shape[1]*images.shape[2])
     return inputs
- 
+
 def load_data_with_identity(include_mirror=False):
     """ Loads the labeled data images, targets, and identities (sorted).
     """
@@ -75,6 +78,72 @@ def load_data_with_identity(include_mirror=False):
     identities = inputs_sort[:,-1]
 
     return inputs, targets, identities
+
+def load_data_with_identity_uniform(include_mirror=False):
+    """ Loads the labeled data images, targets, and identities (sorted).
+    Makes sure that the number of examples for each label is somewhat similar
+    by deleting 4's and 7's target examples before returning. Keeps the first ~315 examples.
+    """
+    data = loadmat('labeled_images.mat')
+    images = data['tr_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
+    targets = data['tr_labels']
+    identities = data['tr_identity']
+
+    # Get the images into the desired form: num_examples x 32 x 32 (and face is rotated in proper orientation)
+    images = np.transpose(images, (0,2,1))[:,:,::-1]
+
+    # Flatten the 32x32 to 1024 1D
+    images = images.reshape(images.shape[0], images.shape[1]*images.shape[2])
+
+    # Sort the array based on the tr_labels
+    # Sort the identities
+    temp = np.append(identities,targets,1)
+    identities_sort = temp[temp[:,1].argsort()]
+    identities = identities_sort[:,0]
+
+    # Sort the images
+    temp = np.append(images,targets,1)
+    images_sort = temp[temp[:,-1].argsort()]
+    images = images_sort[:,0:-1]
+
+    # Return sorted targets:
+    targets = images_sort[:,-1]
+
+    # Throw away some of the ones where the labels are 4 and 7
+    indices_4 = np.where(targets == 4) # Index values where targets[indices_4] == 4
+    start_index = 316 # Start index of where to delete the 4's
+    end_index = indices_4[0][-1] + 1
+    targets = np.delete(targets, indices_4[0][start_index:end_index])
+    images = np.delete(images, indices_4[0][start_index:end_index], axis=0) # Delete the rows specified by indices_4[0][start:end]
+    identities = np.delete(identities, indices_4[0][start_index:end_index])
+
+    # Throw away some of the 7's
+    indices_7 = np.where(targets == 7) # Index values where targets[indices_4] == 4
+    start_index = 316 # Start index of where to delete the 4's
+    end_index = indices_7[0][-1] + 1
+    targets = np.delete(targets, indices_7[0][start_index:end_index])
+    images = np.delete(images, indices_7[0][start_index:end_index], axis=0)
+    identities = np.delete(identities, indices_7[0][start_index:end_index])
+
+    print "Images shape: ", images.shape
+    print "Targets shape: ", targets.shape
+    print "identities shape: ", identities.shape
+
+    # Generate a mirrored version if necessary:
+    if include_mirror:
+        # Unflatten the images
+        images = images.reshape(images.shape[0], 32, 32)
+
+        # Created mirrored instances
+        mirrored_faces = images[:,:,::-1]
+        images = np.append(images, mirrored_faces, 0)
+        identities = np.append(identities, identities,0)
+        targets = np.append(targets, targets,0)
+
+        # Flatten the 32x32 to 1024 1D
+        images = images.reshape(images.shape[0], images.shape[1]*images.shape[2])
+
+    return images, targets, identities
 
 def reload_data_with_identity_normalized():
     """ Reloads the normalized data. Include mirror.
