@@ -95,7 +95,7 @@ def build_mlp():
     return model
 
 def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5'):
-    inputs, targets, identities = load_data_with_identity_uniform(True)
+    inputs, targets, identities = load_data_with_identity(True)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
 
@@ -109,8 +109,9 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     score_list = np.zeros(len(lkf))
     index = 0
     val_loss = 1e7
+    val_acc = 0
 
-    batch_size = 128
+    batch_size = 256
     nb_classes = 7
     nb_epoch = 50
 
@@ -155,6 +156,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
                 model.save_weights(weights_checkpoint, overwrite=True)
                 print "Saved weights"
                 val_loss = score[0]
+                val_acc = score[1]
 
             pred = model.predict_classes(X_test)
             # print "Prediction: ", pred
@@ -179,6 +181,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     # use the NN model to classify test data
     print score_list
     print score_list.mean()
+    print "Last weights validation loss {:0.4f} accuracy {:0.4f}".format(val_loss, val_acc)
     return nn_list
 
 def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5'):
@@ -196,6 +199,6 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5')
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
     #print "Using board {:d}".format(csutils.get_board())
-    #main('CNN')
+    main('CNN')
 
     test_model()
