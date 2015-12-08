@@ -2,6 +2,7 @@ from scipy.io import loadmat
 from scipy import signal
 import numpy as np
 import matplotlib.pyplot as plt
+import theano
 
 def remove_mean(inputs):
     """ Remove the mean of each individual images.
@@ -36,6 +37,25 @@ def zca_whitening(inputs, epsilon=0.1):
     ZCAMatrix = np.dot(np.dot(U, np.diag(1.0/np.sqrt(S + epsilon))), U.T) #ZCA Whitening matrix
 
     return ZCAMatrix   #Data whitening
+
+def preprocess_images(inputs):
+    """ Assumes input is a N X D (ex N x 1024) array of image data.
+    Applies:
+        - Reshape for CNN (N X 1 X 32 x 32)
+        - Convert to FloatX
+        - Normalizing to 0-1 range (/255)
+        - Remove mean for each example
+
+    Returns a N X 1 X 32 X 32 array
+    """
+    inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
+    inputs = inputs.astype(theano.config.floatX)
+    print "Normalizing to 0-1 range for input..."
+    inputs /= 255
+    print "Removing mean for each example in input..."
+    inputs = remove_mean(inputs)
+
+    return inputs
 
 def save_output_csv(filename, pred):
     """Save the prediction in a filename."""

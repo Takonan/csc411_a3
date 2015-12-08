@@ -98,20 +98,16 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     inputs, targets, identities = load_data_with_identity(True)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
-
-    inputs = inputs.astype(theano.config.floatX)
-    inputs /= 255
+        inputs = preprocess_images(inputs)
 
     print "Loaded the data..."
 
     # Load the unlabeled data
     unlabeled_inputs = load_unlabeled_data(include_mirror=False)
     unlabeled_inputs = unlabeled_inputs.reshape(unlabeled_inputs.shape[0], 1, 32,32)
-    unlabeled_inputs = unlabeled_inputs.astype(theano.config.floatX)
-    unlabeled_inputs /= 255
+    unlabeled_inputs = preprocess_images(unlabeled_inputs)
 
     mega_inputs = np.append(unlabeled_inputs, inputs, axis=0)
-    mega_inputs = remove_mean(mega_inputs) # Remove the mean for each image
     ZCAMatrix = zca_whitening(mega_inputs, epsilon=10e-2)
     print "Done computing ZCAMatrix on unlabeled + labeled input...."
     print "ZCAMatrix shape: ", ZCAMatrix.shape
@@ -216,10 +212,8 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5',
 
     # Load and preprocess test set
     x_test = load_public_test()
-    x_test = x_test.astype(theano.config.floatX)
-    x_test /= 255
     x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
-    x_test = remove_mean(x_test)
+    x_test = preprocess_images(x_test)
 
     if useZCA:
         ZCAMatrix = np.load('ZCAMatrix.npy')
@@ -239,4 +233,4 @@ if __name__ == '__main__':
     #print "Using board {:d}".format(csutils.get_board())
     main('CNN')
 
-    test_model()
+    test_model(useZCA=True)
