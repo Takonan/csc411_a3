@@ -3,6 +3,40 @@ from scipy import signal
 import numpy as np
 import matplotlib.pyplot as plt
 
+def remove_mean(inputs):
+    """ Remove the mean of each individual images.
+    Assumes that the inputs is Nx1xRxC, where N is number of examples, and R,C is dimension of image
+    """
+    # Flatten
+    inputs = np.reshape(inputs, (inputs.shape[0], inputs.shape[1]*inputs.shape[2]*inputs.shape[3]))
+    inputs_mean = inputs.mean(axis=1) # Average for each row. Dimension = N rows
+    inputs_mean = inputs_mean.reshape(inputs_mean.shape[0], 1) # Make inputs_mean Nx1
+    inputs_mean = np.tile(inputs_mean, inputs.shape[1]) # Make inputs_mean NxD
+    inputs -= inputs_mean
+    inputs = np.reshape(inputs, (inputs.shape[0], 1,32,32))
+
+    return inputs
+
+def zca_whitening(inputs, epsilon=0.1):
+    """ Assumes that the inputs is a Nx1xRxC, where N is number of examples, and R,C is dimension of image
+    epsilon is Whitening constant, it prevents division by zero.
+
+    Output: ZCAMatrix. Multiply this with the inputs (shape(1,dimension))
+    Based on: http://ufldl.stanford.edu/wiki/index.php/Implementing_PCA/Whitening
+    http://stackoverflow.com/questions/31528800/how-to-implement-zca-whitening-python
+    """
+    inputs = np.reshape(inputs, (inputs.shape[0], inputs.shape[1]*inputs.shape[2]*inputs.shape[3]))
+    sigma = np.dot(inputs.T, inputs)/inputs.shape[0] #Correlation matrix
+    U,S,V = np.linalg.svd(sigma) #Singular Value Decomposition
+    # print sigma.shape
+    # print U.shape
+    # print S.shape
+    # print V.shape
+    # print np.diag(1.0/np.sqrt(S + epsilon)).shape
+    ZCAMatrix = np.dot(np.dot(U, np.diag(1.0/np.sqrt(S + epsilon))), U.T) #ZCA Whitening matrix
+
+    return ZCAMatrix   #Data whitening
+
 def save_output_csv(filename, pred):
     """Save the prediction in a filename."""
     with open(filename, 'w') as f_result:
@@ -29,7 +63,7 @@ def ShowMeans(means):
   plt.clf()
   for i in xrange(means.shape[0]):
     plt.subplot(1, means.shape[0], i+1)
-    plt.imshow(means[i,:,:], cmap=plt.cm.gray)
+    plt.imshow(means[i,0,:,:], cmap=plt.cm.gray)
   plt.draw()
   plt.show() # HC: Added show line
   # raw_input('Press Enter.')
