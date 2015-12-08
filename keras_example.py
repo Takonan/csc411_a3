@@ -18,7 +18,7 @@ def build_cnn():
     # input image dimensions
     img_rows, img_cols = 32, 32
     # number of convolutional filters to use
-    nb_filters = 5
+    nb_filters = 32
     # size of pooling area for max pooling
     nb_pool = 2
     # convolution kernel size
@@ -38,9 +38,6 @@ def build_cnn():
     model.add(Dropout(0.25))
     model.add(Flatten())
     model.add(Dense(128))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(64))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
     model.add(Dense(nb_classes))
@@ -98,7 +95,7 @@ def build_mlp():
     return model
 
 def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5'):
-    inputs, targets, identities = load_data_with_identity(True)
+    inputs, targets, identities = load_data_with_identity_uniform(True)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
 
@@ -111,18 +108,19 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     nn_list = []
     score_list = np.zeros(len(lkf))
     index = 0
+    val_loss = 1e7
 
     batch_size = 128
     nb_classes = 7
-    nb_epoch = 30
+    nb_epoch = 50
 
     for train_index, test_index in lkf:
-        print("TRAIN:", train_index, "TEST:", test_index)
+        #print("TRAIN:", train_index, "TEST:", test_index)
         X_train, X_test = inputs[train_index], inputs[test_index]
         y_train, y_test = targets[train_index], targets[test_index]
 
-        print X_train.shape
-        print y_train.shape
+        #print X_train.shape
+        #print y_train.shape
 
         # convert class vectors to binary class matrices
         y_train_oneOfK = np_utils.to_categorical(y_train-1, nb_classes)
@@ -143,20 +141,26 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
                 model = build_mlp()
         # model.fit(X_train, y_train, nb_epoch=20, batch_size=100, show_accuracy=True)
         # score = model.evaluate(X_test, y_test_oneOfK, batch_size=100, show_accuracy=True)
-        model.fit(X_train, y_train_oneOfK,
-          batch_size=batch_size, nb_epoch=nb_epoch,
+        for epoch_i in np.arange(nb_epoch):
+            model.fit(X_train, y_train_oneOfK,
+          batch_size=batch_size, nb_epoch=1,
           show_accuracy=True, verbose=2,
           validation_data=(X_test, y_test_oneOfK))
-        score = model.evaluate(X_test, y_test_oneOfK,
+            score = model.evaluate(X_test, y_test_oneOfK,
                        show_accuracy=True, verbose=0)
-        print "Score:", score
-        #print X_test.shape
-        #raw_input()
-        pred = model.predict_classes(X_test)
-        # print "Prediction: ", pred
-        # print "y_test - 1: ", y_test-1
-        print "Manual score", (pred == (y_test-1)).mean()
-        score_list[index] = (pred == (y_test-1)).mean()
+            print "Score:", score
+            #print X_test.shape
+            #raw_input()
+            if (score[0] < val_loss):
+                model.save_weights(weights_checkpoint, overwrite=True)
+                print "Saved weights"
+                val_loss = score[0]
+
+            pred = model.predict_classes(X_test)
+            # print "Prediction: ", pred
+            # print "y_test - 1: ", y_test-1
+            print "Manual score", (pred == (y_test-1)).mean()
+            score_list[index] = (pred == (y_test-1)).mean()
 
         # Save model and weights
 
@@ -164,9 +168,9 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
         with open(model_checkpoint, 'w+') as outfile:
             outfile.write(yaml.dump(yaml_string, default_flow_style=True))
         # Only save the weights when the current index score is equal to the best so far
-        if (index > 0 and score_list[index] == score_list.max()):
-            model.save_weights(weights_checkpoint, overwrite=True)
-        print "Saved model and weights"
+        #if (index > 0 and score_list[index] == score_list.max()):
+        #    model.save_weights(weights_checkpoint, overwrite=True)
+        #    print "Saved weights"
 
         nn_list.append(model)
 
@@ -184,14 +188,14 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5')
     x_test = load_public_test()
     x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
     print "Finished loading test model"
-    predictions = test_model.predict_classes(x_test)+ 1
-    print predictions
-    save_output_csv("test_predictions.csv", predictions)
+    predictions = test_model.predict_classes(x_test)
+    print predictions+1
+    save_output_csv("test_predictions.csv", predictions+1)
     return
 
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
     #print "Using board {:d}".format(csutils.get_board())
-    main('CNN')
+    #main('CNN')
 
     test_model()

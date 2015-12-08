@@ -39,7 +39,9 @@ def load_public_test():
     """
     data = loadmat('public_test_images.mat')
     images = data['public_test_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
-    inputs = images.reshape(images.shape[0], images.shape[1]*images.shape[2])
+    inputs = np.transpose(images, (0, 2, 1))
+    inputs = inputs[:, :, ::-1]
+    inputs = inputs.reshape(images.shape[0], images.shape[1]*images.shape[2])
     return inputs
 
 def load_data_with_identity(include_mirror=False):
