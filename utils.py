@@ -690,7 +690,7 @@ def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='
 
     predictions = np.zeros((x_test.shape[0], num_models), dtype=int)
     agg_pred = np.zeros((x_test.shape[0], ), dtype=int)
-    for i in np.arange(num_models):
+    for i in np.arange(1, num_models):
         test_model.load_weights(weights_checkpoint + "{:d}.h5".format(i))
         predictions[:, i] = (test_model.predict_classes(x_test) + 1).astype(int)
     predictions = predictions.astype(int)
@@ -702,4 +702,27 @@ def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='
     return
 
 
+def plot_training_loss_accuracy(data='training_stats.npy'):
+    training_score = np.load(data)
+    plt.plot(xrange(nb_epoch), training_score[:,0], label='Training loss')
+    plt.plot(xrange(nb_epoch), training_score[:, 2], label='Validation loss')
+    plt.legend()
+    plt.xlabel('Number of epochs')
+    plt.ylabel('Cross entropy loss')
+    plt.show()
+    
+    plt.plot(xrange(nb_epoch), training_score[:,1], label='Training accuracy')
+    plt.plot(xrange(nb_epoch), training_score[:,3], label='Validation accuracy')
+    plt.legend()
+    plt.xlabel('Number of epochs')
+    plt.ylabel('Accuracy')
+    plt.show()
+
+
+
+
+
+    
+    
+    
     

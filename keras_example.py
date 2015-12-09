@@ -3,12 +3,14 @@ from utils import *
 import theano
 import yaml
 
+import matplotlib.pyplot as plt
 import numpy as np
 from keras.models import *
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.optimizers import SGD, RMSprop
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
+from keras.regularizers import l2
 
 #from sklearn.cross_validation import cross_val_score
 from sklearn.cross_validation import LabelKFold
@@ -18,11 +20,12 @@ def build_cnn():
     # input image dimensions
     img_rows, img_cols = 32, 32
     # number of convolutional filters to use
-    nb_filters = 32
+    nb_filters = 128
     # size of pooling area for max pooling
     nb_pool = 2
     # convolution kernel size
-    nb_conv = 3
+    nb_conv = 7
+    nb_conv2 = 3
     # number of classes
     nb_classes = 7
 
@@ -36,20 +39,17 @@ def build_cnn():
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
     model.add(Activation('relu'))
-    model.add(Convolution2D(nb_filters, nb_conv, nb_conv))
+    model.add(Convolution2D(nb_filters, nb_conv2, nb_conv2))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
-    model.add(Dropout(0.25))
+    model.add(Dropout(0.50))
     model.add(Flatten())
-    model.add(Dense(512))
+    model.add(Dense(128,W_regularizer=l2(0.001)))
     model.add(Activation('relu'))
-    model.add(Dropout(0.25))
-    model.add(Dense(128))
+    model.add(Dropout(0.50))
+    model.add(Dense(128, W_regularizer=l2(0.001)))
     model.add(Activation('relu'))
-    model.add(Dropout(0.25))
-    model.add(Dense(32))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.25))
+    model.add(Dropout(0.50))
     model.add(Dense(nb_classes))
     model.add(Activation('softmax'))
 
@@ -104,7 +104,7 @@ def build_mlp():
 
     return model
 
-def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights_'):
+def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights_', useBagging=True):
     inputs, targets, identities = load_data_with_identity(True)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
@@ -130,13 +130,14 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     lkf = LabelKFold(identities, n_folds=8)
     nn_list = []
     score_list = np.zeros(len(lkf))
+    
     index = 0
     val_loss = 1e7
     val_acc = 0
-
     batch_size = 512
     nb_classes = 7
-    nb_epoch = 50
+    nb_epoch = 80
+    training_stats = np.zeros((nb_epoch, 4))
 
     for train_index, test_index in lkf:
         #print("TRAIN:", train_index, "TEST:", test_index)
@@ -184,19 +185,29 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
                        show_accuracy=True, verbose=0)
             print "Score:", score
             #print X_test.shape
-            #raw_input()
             if (score[0] < val_loss):
                 model.save_weights(weights_checkpoint+"{:d}.h5".format(index), overwrite=True)
                 print "Saved weights to weights_checkpoint_{:d}.h5".format(index)
-                raw_input()
                 val_loss = score[0]
                 val_acc = score[1]
             
             pred = model.predict_classes(X_test)
             # print "Prediction: ", pred
             # print "y_test - 1: ", y_test-1
-            print "Manual score", (pred == (y_test-1)).mean()
+            print "Manual score, fold {:d}".format(index), (pred == (y_test-1)).mean()
             score_list[index] = (pred == (y_test-1)).mean()
+            # Randomly choose a fold to record
+            if index==7:
+                train_score = model.evaluate(X_train, y_train_oneOfK,
+                                show_accuracy=True, verbose=0)
+                training_stats[:, :2] = train_score
+                training_stats[:, 2:] = score
+        outfile = open('training_stats.npy','w')
+        np.save(outfile, training_stats)
+        outfile.close()
+        print "Saved training stats for fold"
+
+
 
         # Save model and weights
 
@@ -218,7 +229,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     print "Last weights validation loss {:0.4f} accuracy {:0.4f}".format(val_loss, val_acc)
     return nn_list
 
-def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_2.h5', useZCA=False):
+def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_6.h5', useZCA=False):
     model_stream = file(model_checkpoint, 'r')
     test_model = model_from_yaml(yaml.safe_load(model_stream))
     test_model.load_weights(weights_checkpoint)
