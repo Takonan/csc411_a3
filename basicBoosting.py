@@ -127,11 +127,11 @@ def run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True):
     # Predict on the training data
     train_pred = clf.predict(inputs)
     print classification_report(targets, train_pred)
-    # print "Done learning, now predicting"
-    # pred = clf.predict(x_test)
-    # print pred
-    # print "Saving the output test prediction"
-    # save_output_csv("Perceptron_Bagging_test_predictions.csv", pred)
+    print "Done learning, now predicting"
+    pred = clf.predict(x_test)
+    print pred
+    print "Saving the output test prediction"
+    save_output_csv("Perceptron_Bagging_test_predictions.csv", pred)
     return
 
 def pca_SVM(normalized_intensity=False, ratio=0.25):
@@ -196,11 +196,11 @@ def pca_SVM(normalized_intensity=False, ratio=0.25):
     return
 
 if __name__ == '__main__':
-    print "Running classification algorithms with original training data set:"
-    start = time.time()
-    run_AdaBoost(num_estimator=500, include_mirror=True, do_cv=True)
-    elasped = time.time() - start
-    print "Elasped time: ", elasped
+    #print "Running classification algorithms with original training data set:"
+    #start = time.time()
+    #run_AdaBoost(num_estimator=500, include_mirror=True, do_cv=True)
+    #elasped = time.time() - start
+    #print "Elasped time: ", elasped
 
     # # run_ExtremeRandFor()
     # run_RandFor()
@@ -217,11 +217,11 @@ if __name__ == '__main__':
     # elasped = time.time() - start
     # print "Elasped time: ", elasped
 
-    # for num_estimator in [100]: #[10, 25, 50]:
+    #for num_estimator in [100]: #[10, 25, 50]:
     #     for num_iter in [25]: #[5, 10, 25, 50]:
     #         # print "Original Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, False, False))
     #         print "Original + Mirrored Set, num_estimator: %d, num_iter: %d, accuracy: %f" % (num_estimator, num_iter, run_Bagging_LabelKFold(num_estimator, num_iter, True, False))
 
     # pca_SVM()
 
-    # run_Bagging_testset(num_estimator=10, num_iter=15, include_mirror=True)
+    run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True)

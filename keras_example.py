@@ -35,11 +35,21 @@ def build_cnn():
     model.add(Convolution2D(nb_filters, nb_conv, nb_conv))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
+    model.add(Activation('relu'))
+    model.add(Convolution2D(nb_filters, nb_conv, nb_conv))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
     model.add(Dropout(0.25))
     model.add(Flatten())
+    model.add(Dense(512))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.25))
     model.add(Dense(128))
     model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    model.add(Dropout(0.25))
+    model.add(Dense(32))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.25))
     model.add(Dense(nb_classes))
     model.add(Activation('softmax'))
 
@@ -94,7 +104,7 @@ def build_mlp():
 
     return model
 
-def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5'):
+def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights_'):
     inputs, targets, identities = load_data_with_identity(True)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
@@ -124,7 +134,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     val_loss = 1e7
     val_acc = 0
 
-    batch_size = 256
+    batch_size = 512
     nb_classes = 7
     nb_epoch = 50
 
@@ -163,6 +173,8 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
                 model = build_mlp()
         # model.fit(X_train, y_train, nb_epoch=20, batch_size=100, show_accuracy=True)
         # score = model.evaluate(X_test, y_test_oneOfK, batch_size=100, show_accuracy=True)
+        val_loss = 1e7
+        val_acc = 0
         for epoch_i in np.arange(nb_epoch):
             model.fit(X_train, y_train_oneOfK,
           batch_size=batch_size, nb_epoch=1,
@@ -174,11 +186,12 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
             #print X_test.shape
             #raw_input()
             if (score[0] < val_loss):
-                model.save_weights(weights_checkpoint, overwrite=True)
-                print "Saved weights"
+                model.save_weights(weights_checkpoint+"{:d}.h5".format(index), overwrite=True)
+                print "Saved weights to weights_checkpoint_{:d}.h5".format(index)
+                raw_input()
                 val_loss = score[0]
                 val_acc = score[1]
-
+            
             pred = model.predict_classes(X_test)
             # print "Prediction: ", pred
             # print "y_test - 1: ", y_test-1
@@ -205,7 +218,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     print "Last weights validation loss {:0.4f} accuracy {:0.4f}".format(val_loss, val_acc)
     return nn_list
 
-def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5', useZCA=False):
+def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_2.h5', useZCA=False):
     model_stream = file(model_checkpoint, 'r')
     test_model = model_from_yaml(yaml.safe_load(model_stream))
     test_model.load_weights(weights_checkpoint)
@@ -231,6 +244,7 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights.h5',
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
     #print "Using board {:d}".format(csutils.get_board())
-    main('CNN')
+    #main('CNN')
 
-    test_model(useZCA=True)
+    #test_model(useZCA=True)
+    NN_bag_predict_unlabeled()

@@ -3,6 +3,9 @@ from scipy import signal
 import numpy as np
 import matplotlib.pyplot as plt
 import theano
+import yaml
+
+from keras.models import *
 
 def remove_mean(inputs):
     """ Remove the mean of each individual images.
@@ -666,5 +669,37 @@ def reload_unlabeled_data_normalized(include_mirror=False):
     images = np.load('unlabeled_normalized.npy')
     return images
 
+def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='NNweights_', num_models=8, useZCA=True):
+#    Perform predictions of unlabeled images based on a majority vote scheme of all NNs from k fold cross validation, leave out the first fold because of low performance
+
+    model_stream = file(model_checkpoint, 'r')
+    test_model = model_from_yaml(yaml.safe_load(model_stream))
+
+    # Load and preprocess test set
+    x_test = load_public_test()
+    x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
+    x_test = preprocess_images(x_test)
+    
+    if useZCA:
+        ZCAMatrix = np.load('ZCAMatrix.npy')
+        x_test = np.dot(x_test.reshape(x_test.shape[0],x_test.shape[1]*x_test.shape[2]*x_test.shape[3]),ZCAMatrix)
+        x_test = x_test.reshape(x_test.shape[0], 1, 32,32)
+        print "Processed test input with ZCAMatrix"
+
+    print "Finished loading test model"
+
+    predictions = np.zeros((x_test.shape[0], num_models), dtype=int)
+    agg_pred = np.zeros((x_test.shape[0], ), dtype=int)
+    for i in np.arange(num_models):
+        test_model.load_weights(weights_checkpoint + "{:d}.h5".format(i))
+        predictions[:, i] = (test_model.predict_classes(x_test) + 1).astype(int)
+    predictions = predictions.astype(int)
+    print predictions
+    for i in np.arange(x_test.shape[0]):
+        agg_pred[i] += np.argmax(np.bincount(predictions[i, :]))
+    print agg_pred
+    save_output_csv("test_predictions.csv", agg_pred)
+    return
 
 
+    
