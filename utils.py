@@ -94,8 +94,13 @@ def ShowMeans(means):
 def load_public_test():
     """ Loads the labeled data images, targets, and identities (sorted).
     """
+    # Load the public test set
     data = loadmat('public_test_images.mat')
     images = data['public_test_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
+    # Load the hidden test set
+    data = loadmat('hidden_test_images.mat')
+    # Append the hidden test set to the public test set
+    images = np.append(images, data['hidden_test_images'].T, axis=0)
     inputs = np.transpose(images, (0, 2, 1))
     inputs = inputs[:, :, ::-1]
     inputs = inputs.reshape(images.shape[0], images.shape[1]*images.shape[2])
