@@ -698,7 +698,7 @@ def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='
     for i in np.arange(x_test.shape[0]):
         agg_pred[i] += np.argmax(np.bincount(predictions[i, :]))
     print agg_pred
-    save_output_csv("test_predictions.csv", agg_pred)
+    save_output_csv("bagged_CNN_test_predictions.csv", agg_pred)
     return
 
 
