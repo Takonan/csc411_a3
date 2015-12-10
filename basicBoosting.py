@@ -21,6 +21,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from utils import *
 import time
+import matplotlib.pyplot as plt
 
 def run_AdaBoost(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False):
     # Loading data
@@ -96,8 +97,14 @@ def run_Bagging(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False,
     return
 
 def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, reload=False):
+    ZCAMatrix = np.load('ZCAMatrix.npy')
+
     if not reload:
-        inputs, targets, identities = load_data_with_identity(include_mirror)
+        inputs, targets, identities = load_data_with_identity(True)
+        inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
+        inputs = preprocess_images(inputs)
+        inputs = inputs.reshape(inputs.shape[0],inputs.shape[1]*inputs.shape[2]*inputs.shape[3])
+        inputs = np.dot(inputs,ZCAMatrix)
     else:
         inputs, targets, identities = reload_data_with_identity_normalized()
 
@@ -108,9 +115,10 @@ def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, r
     # myClassifier = OneVsRestClassifier(LinearSVC(random_state=0))
     clf = BaggingClassifier(base_estimator=myClassifier, n_estimators=num_estimator)
 
-    lkf = LabelKFold(identities, n_folds=10)
+    lkf = LabelKFold(identities, n_folds=3)
 
-    scores = cross_val_score(clf, inputs, targets, n_jobs=-1, cv=lkf)
+    print "Starting cross validation testing on perceptron bagging with %d estimators" % (num_estimator)
+    scores = cross_val_score(clf, inputs, targets, cv=lkf)
     print scores
     print scores.mean()
 
@@ -132,6 +140,34 @@ def run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True):
     print pred
     print "Saving the output test prediction"
     save_output_csv("Perceptron_Bagging_test_predictions.csv", pred)
+    return
+
+def run_Perceptron_NumEstimator_Experiment():
+    val_score_list = np.zeros(9)
+    num_estimator_list = np.array([1,2,3, 5, 10, 25, 50, 75, 100])
+
+    for i in xrange(num_estimator_list.shape[0]):
+        num_estimator = num_estimator_list[i]
+        print "Number of num_estimator: ", num_estimator
+        score = run_Bagging_LabelKFold(num_estimator=num_estimator, num_iter=10, include_mirror=True)
+        print "Average Validation score: ", score
+        val_score_list[i] = score
+
+    print "Val_score_list: "
+    print val_score_list
+    print "num_estimator_list: "
+    print num_estimator_list
+
+    # Plot the data
+    plt.figure()
+    plt.plot(num_estimator_list, val_score_list, label='Avg Validation Accuracy (3 fold)')
+    plt.legend(loc=4)
+    plt.title('Perceptron Bagging Validation Accuray vs Number of Estimator')
+    plt.xlabel('Number of Estimators')
+    plt.ylabel('Accuracy')
+    plt.savefig('Perceptron_Bagging_ValAcc_vs_NumEstimator')
+    plt.show()
+
     return
 
 def pca_SVM(normalized_intensity=False, ratio=0.25):
@@ -224,4 +260,6 @@ if __name__ == '__main__':
 
     # pca_SVM()
 
-    run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True)
+    run_Perceptron_NumEstimator_Experiment()
+
+
