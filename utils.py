@@ -715,20 +715,27 @@ def plot_training_loss_accuracy(data='training_stats.npy'):
     plt.legend()
     plt.xlabel('Number of epochs')
     plt.ylabel('Cross entropy loss')
-    plt.show()
+    plt.imsave('train_loss_vs_epoch.png', bbox_inches='tight')
 
     plt.plot(xrange(nb_epoch), training_score[:,1], label='Training accuracy')
     plt.plot(xrange(nb_epoch), training_score[:,3], label='Validation accuracy')
     plt.legend()
     plt.xlabel('Number of epochs')
     plt.ylabel('Accuracy')
-    plt.show()
+    plt.imsave('train_acc_vs_epoch.png', bbox_inches='tight')
 
 
+def plot_kfold_validation_accuracy(data='fold_val_acc.npy'):
+    mean_acc_vec = np.zeros((8, 2))
+    i = 0
+    for x in xrange(3, 11, 2):
+        fold_acc = np.load('{:d}fold_val_acc.npy'.format(x))
+        mean_acc_vec[i][0] = i
+        mean_acc_vec[i][1] = fold_acc.mean()
 
-
-
-
-
-
+    plt.plot(mean_acc_vec[:][0], mean_acc_vec[:][1], label='Validation accuracy')
+    plt.legend()
+    plt.xlabel('Number of folds')
+    plt.ylabel('Validation accuracy')
+    plt.savefig('train_acc_vs_fold.png', bbox_inches='tight')
 
