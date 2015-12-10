@@ -130,7 +130,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     lkf = LabelKFold(identities, n_folds=8)
     nn_list = []
     score_list = np.zeros(len(lkf))
-    
+
     index = 0
     val_loss = 1e7
     val_acc = 0
@@ -190,7 +190,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
                 print "Saved weights to weights_checkpoint_{:d}.h5".format(index)
                 val_loss = score[0]
                 val_acc = score[1]
-            
+
             pred = model.predict_classes(X_test)
             # print "Prediction: ", pred
             # print "y_test - 1: ", y_test-1
@@ -200,8 +200,8 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
             if index==7:
                 train_score = model.evaluate(X_train, y_train_oneOfK,
                                 show_accuracy=True, verbose=0)
-                training_stats[:, :2] = train_score
-                training_stats[:, 2:] = score
+                training_stats[epoch_i, :2] = train_score
+                training_stats[epoch_i, 2:] = score
         outfile = open('training_stats.npy','w')
         np.save(outfile, training_stats)
         outfile.close()
