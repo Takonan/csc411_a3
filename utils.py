@@ -732,16 +732,32 @@ def plot_training_loss_accuracy(data='training_stats.npy'):
 
 
 def plot_kfold_validation_accuracy(data='fold_val_acc.npy'):
-    mean_acc_vec = np.zeros((8, 2))
+    mean_acc_vec = np.zeros((4, 2))
+    max_acc_vec = np.zeros((4, 2))
     i = 0
     for x in xrange(3, 11, 2):
+        print '{:d}fold_val_acc.npy'.format(x)
         fold_acc = np.load('{:d}fold_val_acc.npy'.format(x))
-        mean_acc_vec[i][0] = i
+        mean_acc_vec[i][0] = x
+        max_acc_vec[i][0] = x
         mean_acc_vec[i][1] = fold_acc.mean()
+        max_acc_vec[i][1] = fold_acc.max()
+        print fold_acc.mean()
+        print fold_acc.max()
+        i += 1
 
-    plt.plot(mean_acc_vec[:][0], mean_acc_vec[:][1], label='Validation accuracy')
-    plt.legend()
+    print mean_acc_vec
+
+    plt.figure
+    plt.plot(mean_acc_vec[:,0], mean_acc_vec[:,1], label='Avg Validation accuracy')
+    plt.plot(max_acc_vec[:,0], max_acc_vec[:,1], label='Max Validation accuracy')
+    plt.legend(loc=4)
+    plt.title('Validation Accuracy Vs Number of Folds')
     plt.xlabel('Number of folds')
     plt.ylabel('Validation accuracy')
-    plt.savefig('train_acc_vs_fold.png', bbox_inches='tight')
+    plt.savefig('train_acc_vs_fold.png', dpi=200)
+
+
+
+
 
