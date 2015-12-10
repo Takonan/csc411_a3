@@ -709,20 +709,24 @@ def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='
 
 def plot_training_loss_accuracy(data='training_stats.npy'):
     training_score = np.load(data)
-    nb_epoch = training_score.shape[0]
-    plt.plot(xrange(nb_epoch), training_score[:,0], label='Training loss')
-    plt.plot(xrange(nb_epoch), training_score[:, 2], label='Validation loss')
+    non_zero_indices = np.nonzero(training_score[:,0])[0]
+    start_index = non_zero_indices[0]
+    end_index = non_zero_indices[-1]
+    nb_epoch = end_index  # Not training_score.shape[0] anymore
+    plt.plot(xrange(nb_epoch), training_score[start_index:end_index,0], label='Training loss')
+    plt.plot(xrange(nb_epoch), training_score[start_index:end_index,2], label='Validation loss')
     plt.legend()
     plt.xlabel('Number of epochs')
     plt.ylabel('Cross entropy loss')
-    plt.imsave('train_loss_vs_epoch.png', bbox_inches='tight')
+    plt.savefig('train_loss_vs_epoch.png', dpi=200)
 
-    plt.plot(xrange(nb_epoch), training_score[:,1], label='Training accuracy')
-    plt.plot(xrange(nb_epoch), training_score[:,3], label='Validation accuracy')
-    plt.legend()
+    plt.figure()
+    plt.plot(xrange(nb_epoch), training_score[start_index:end_index,1], label='Training accuracy')
+    plt.plot(xrange(nb_epoch), training_score[start_index:end_index,3], label='Validation accuracy')
+    plt.legend(loc=4)
     plt.xlabel('Number of epochs')
     plt.ylabel('Accuracy')
-    plt.imsave('train_acc_vs_epoch.png', bbox_inches='tight')
+    plt.savefig('train_acc_vs_epoch.png', dpi=200)
 
 
 def plot_kfold_validation_accuracy(data='fold_val_acc.npy'):
