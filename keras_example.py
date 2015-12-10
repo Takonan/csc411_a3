@@ -20,11 +20,11 @@ def build_cnn():
     # input image dimensions
     img_rows, img_cols = 32, 32
     # number of convolutional filters to use
-    nb_filters = 128
+    nb_filters = 64
     # size of pooling area for max pooling
     nb_pool = 2
     # convolution kernel size
-    nb_conv = 7
+    nb_conv = 5
     nb_conv2 = 3
     # number of classes
     nb_classes = 7
@@ -39,15 +39,15 @@ def build_cnn():
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
     model.add(Activation('relu'))
-    model.add(Convolution2D(nb_filters, nb_conv2, nb_conv2))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
+    #model.add(Convolution2D(nb_filters, nb_conv2, nb_conv2))
+    #model.add(Activation('relu'))
+    #model.add(MaxPooling2D(pool_size=(nb_pool, nb_pool)))
     model.add(Dropout(0.50))
     model.add(Flatten())
-    model.add(Dense(128,W_regularizer=l2(0.001)))
+    model.add(Dense(256,W_regularizer=l2(0.001)))
     model.add(Activation('relu'))
     model.add(Dropout(0.50))
-    model.add(Dense(128, W_regularizer=l2(0.001)))
+    model.add(Dense(64, W_regularizer=l2(0.001)))
     model.add(Activation('relu'))
     model.add(Dropout(0.50))
     model.add(Dense(nb_classes))
@@ -106,6 +106,7 @@ def build_mlp():
 
 def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NNweights_', useBagging=True):
     inputs, targets, identities = load_data_with_identity(True)
+    lkf = LabelKFold(identities, n_folds=10)
     if model_type == 'CNN':
         inputs = inputs.reshape(inputs.shape[0], 1, 32,32) # For CNN model
         inputs = preprocess_images(inputs)
@@ -127,7 +128,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     outfile.close()
     print "Saved ZCAMatrix as ZCAMatrix.npy..."
 
-    lkf = LabelKFold(identities, n_folds=8)
+    lkf = LabelKFold(identities, n_folds=10)
     nn_list = []
     score_list = np.zeros(len(lkf))
     
@@ -136,7 +137,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     val_acc = 0
     batch_size = 512
     nb_classes = 7
-    nb_epoch = 80
+    nb_epoch = 100
     training_stats = np.zeros((nb_epoch, 4))
 
     for train_index, test_index in lkf:
@@ -176,6 +177,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
         # score = model.evaluate(X_test, y_test_oneOfK, batch_size=100, show_accuracy=True)
         val_loss = 1e7
         val_acc = 0
+        patience = 0
         for epoch_i in np.arange(nb_epoch):
             model.fit(X_train, y_train_oneOfK,
           batch_size=batch_size, nb_epoch=1,
@@ -186,11 +188,16 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
             print "Score:", score
             #print X_test.shape
             if (score[0] < val_loss):
+                patience = 0
                 model.save_weights(weights_checkpoint+"{:d}.h5".format(index), overwrite=True)
-                print "Saved weights to weights_checkpoint_{:d}.h5".format(index)
+                print "Saved weights to "+weights_checkpoint+"{:d}.h5".format(index)
                 val_loss = score[0]
                 val_acc = score[1]
-            
+            else:
+                patience += 1
+            if patience > 20:
+                print "Running out of patience..."
+                break
             pred = model.predict_classes(X_test)
             # print "Prediction: ", pred
             # print "y_test - 1: ", y_test-1
@@ -200,8 +207,8 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
             if index==7:
                 train_score = model.evaluate(X_train, y_train_oneOfK,
                                 show_accuracy=True, verbose=0)
-                training_stats[:, :2] = train_score
-                training_stats[:, 2:] = score
+                training_stats[epoch_i, :2] = train_score
+                training_stats[epoch_i, 2:] = score
         outfile = open('training_stats.npy','w')
         np.save(outfile, training_stats)
         outfile.close()
@@ -236,7 +243,6 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_6.h5
 
     # Load and preprocess test set
     x_test = load_public_test()
-    x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
     x_test = preprocess_images(x_test)
 
     if useZCA:
@@ -252,10 +258,33 @@ def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_6.h5
     save_output_csv("test_predictions.csv", predictions+1)
     return
 
+# This function is not done yet
+def validate_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_5.h5', useZCA=True, Folds=10):
+    model_stream = file(model_checkpoint, 'r')
+    test_model = model_from_yaml(yaml.safe_load(model_stream))
+    test_model.load_weights(weights_checkpoint)
+
+    # Load and preprocess test set
+    x_test, y_test, identities = load_data_with_identity(True)
+    x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
+    x_test = preprocess_images(x_test)
+    lkf = LabelKFold(identities, n_folds=10)
+
+    if useZCA:
+        ZCAMatrix = np.load('ZCAMatrix.npy')
+        x_test = np.dot(x_test.reshape(x_test.shape[0],x_test.shape[1]*x_test.shape[2]*x_test.shape[3]),ZCAMatrix)
+        x_test = x_test.reshape(x_test.shape[0], 1, 32,32)
+        print "Processed test input with ZCAMatrix"
+
+    print "Finished loading test model"
+    
+    predictions = test_model.predict_classes(x_test)
+    return 
+
 if __name__ == '__main__':
     # np.set_printoptions(threshold=np.nan)
     #print "Using board {:d}".format(csutils.get_board())
     #main('CNN')
 
-    #test_model(useZCA=True)
+    test_model(useZCA=True)
     NN_bag_predict_unlabeled()
