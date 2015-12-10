@@ -94,8 +94,13 @@ def ShowMeans(means):
 def load_public_test():
     """ Loads the labeled data images, targets, and identities (sorted).
     """
+    # Load the public test set
     data = loadmat('public_test_images.mat')
     images = data['public_test_images'].T # Transpose so the number of images is in first dimension: 2925, 32, 32
+    # Load the hidden test set
+    data = loadmat('hidden_test_images.mat')
+    # Append the hidden test set to the public test set
+    images = np.append(images, data['hidden_test_images'].T, axis=0)
     inputs = np.transpose(images, (0, 2, 1))
     inputs = inputs[:, :, ::-1]
     inputs = inputs.reshape(images.shape[0], images.shape[1]*images.shape[2])
@@ -679,7 +684,7 @@ def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='
     x_test = load_public_test()
     x_test = x_test.reshape(x_test.shape[0], 1, 32, 32)
     x_test = preprocess_images(x_test)
-    
+
     if useZCA:
         ZCAMatrix = np.load('ZCAMatrix.npy')
         x_test = np.dot(x_test.reshape(x_test.shape[0],x_test.shape[1]*x_test.shape[2]*x_test.shape[3]),ZCAMatrix)
@@ -704,13 +709,14 @@ def NN_bag_predict_unlabeled(model_checkpoint='model.yaml', weights_checkpoint='
 
 def plot_training_loss_accuracy(data='training_stats.npy'):
     training_score = np.load(data)
+    nb_epoch = training_score.shape[0]
     plt.plot(xrange(nb_epoch), training_score[:,0], label='Training loss')
     plt.plot(xrange(nb_epoch), training_score[:, 2], label='Validation loss')
     plt.legend()
     plt.xlabel('Number of epochs')
     plt.ylabel('Cross entropy loss')
     plt.show()
-    
+
     plt.plot(xrange(nb_epoch), training_score[:,1], label='Training accuracy')
     plt.plot(xrange(nb_epoch), training_score[:,3], label='Validation accuracy')
     plt.legend()
@@ -722,7 +728,7 @@ def plot_training_loss_accuracy(data='training_stats.npy'):
 
 
 
-    
-    
-    
-    
+
+
+
+

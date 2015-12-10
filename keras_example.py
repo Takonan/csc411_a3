@@ -131,7 +131,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     lkf = LabelKFold(identities, n_folds=10)
     nn_list = []
     score_list = np.zeros(len(lkf))
-    
+
     index = 0
     val_loss = 1e7
     val_acc = 0
@@ -196,7 +196,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
             else:
                 patience += 1
             if patience > 20:
-                print "Running out of patience..."
+                print "Running out of patience...at {:d}".format(epoch_i)
                 break
             pred = model.predict_classes(X_test)
             # print "Prediction: ", pred
@@ -236,7 +236,7 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     print "Last weights validation loss {:0.4f} accuracy {:0.4f}".format(val_loss, val_acc)
     return nn_list
 
-def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_6.h5', useZCA=False):
+def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_8.h5', useZCA=False):
     model_stream = file(model_checkpoint, 'r')
     test_model = model_from_yaml(yaml.safe_load(model_stream))
     test_model.load_weights(weights_checkpoint)

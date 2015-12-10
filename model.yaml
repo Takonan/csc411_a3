@@ -1,29 +1,23 @@
 "class_mode: categorical\nlayers:\n- W_constraint: null\n  W_regularizer: null\n \
   \ activation: linear\n  activity_regularizer: null\n  b_constraint: null\n  b_regularizer:\
   \ null\n  border_mode: valid\n  dim_ordering: th\n  init: glorot_uniform\n  input_shape:\
-  \ !!python/tuple [1, 32, 32]\n  name: Convolution2D\n  nb_col: 7\n  nb_filter: 32\n\
-  \  nb_row: 7\n  subsample: &id001 !!python/tuple [1, 1]\n- {activation: relu, beta:\
+  \ !!python/tuple [1, 32, 32]\n  name: Convolution2D\n  nb_col: 5\n  nb_filter: 64\n\
+  \  nb_row: 5\n  subsample: &id001 !!python/tuple [1, 1]\n- {activation: relu, beta:\
   \ 0.1, name: Activation, target: 0}\n- W_constraint: null\n  W_regularizer: null\n\
   \  activation: linear\n  activity_regularizer: null\n  b_constraint: null\n  b_regularizer:\
   \ null\n  border_mode: valid\n  dim_ordering: th\n  init: glorot_uniform\n  name:\
-  \ Convolution2D\n  nb_col: 7\n  nb_filter: 32\n  nb_row: 7\n  subsample: *id001\n\
+  \ Convolution2D\n  nb_col: 5\n  nb_filter: 64\n  nb_row: 5\n  subsample: *id001\n\
   - {activation: relu, beta: 0.1, name: Activation, target: 0}\n- border_mode: valid\n\
   \  dim_ordering: th\n  name: MaxPooling2D\n  pool_size: &id002 !!python/tuple [2,\
   \ 2]\n  strides: *id002\n- {activation: relu, beta: 0.1, name: Activation, target:\
-  \ 0}\n- W_constraint: null\n  W_regularizer: null\n  activation: linear\n  activity_regularizer:\
-  \ null\n  b_constraint: null\n  b_regularizer: null\n  border_mode: valid\n  dim_ordering:\
-  \ th\n  init: glorot_uniform\n  name: Convolution2D\n  nb_col: 3\n  nb_filter: 32\n\
-  \  nb_row: 3\n  subsample: *id001\n- {activation: relu, beta: 0.1, name: Activation,\
-  \ target: 0}\n- border_mode: valid\n  dim_ordering: th\n  name: MaxPooling2D\n \
-  \ pool_size: &id003 !!python/tuple [2, 2]\n  strides: *id003\n- {name: Dropout,\
-  \ p: 0.5}\n- {name: Flatten}\n- W_constraint: null\n  W_regularizer: {l1: 0.0, l2:\
-  \ 0.001, name: WeightRegularizer}\n  activation: linear\n  activity_regularizer:\
+  \ 0}\n- {name: Dropout, p: 0.5}\n- {name: Flatten}\n- W_constraint: null\n  W_regularizer:\
+  \ {l1: 0.0, l2: 0.001, name: WeightRegularizer}\n  activation: linear\n  activity_regularizer:\
   \ null\n  b_constraint: null\n  b_regularizer: null\n  init: glorot_uniform\n  input_dim:\
-  \ null\n  name: Dense\n  output_dim: 128\n- {activation: relu, beta: 0.1, name:\
+  \ null\n  name: Dense\n  output_dim: 256\n- {activation: relu, beta: 0.1, name:\
   \ Activation, target: 0}\n- {name: Dropout, p: 0.5}\n- W_constraint: null\n  W_regularizer:\
   \ {l1: 0.0, l2: 0.001, name: WeightRegularizer}\n  activation: linear\n  activity_regularizer:\
   \ null\n  b_constraint: null\n  b_regularizer: null\n  init: glorot_uniform\n  input_dim:\
-  \ null\n  name: Dense\n  output_dim: 32\n- {activation: relu, beta: 0.1, name: Activation,\
+  \ null\n  name: Dense\n  output_dim: 64\n- {activation: relu, beta: 0.1, name: Activation,\
   \ target: 0}\n- {name: Dropout, p: 0.5}\n- {W_constraint: null, W_regularizer: null,\
   \ activation: linear, activity_regularizer: null,\n  b_constraint: null, b_regularizer:\
   \ null, init: glorot_uniform, input_dim: null,\n  name: Dense, output_dim: 7}\n\
