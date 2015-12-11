@@ -53,7 +53,7 @@ def build_cnn():
     model.add(Dense(nb_classes))
     model.add(Activation('softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer='adadelta')
+    model.compile(loss='categorical_crossentropy', optimizer='adam')
 
     return model
 
@@ -128,14 +128,15 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     outfile.close()
     print "Saved ZCAMatrix as ZCAMatrix.npy..."
 
-    lkf = LabelKFold(identities, n_folds=10)
+    n_folds = 10
+    lkf = LabelKFold(identities, n_folds)
     nn_list = []
     score_list = np.zeros(len(lkf))
 
     index = 0
     val_loss = 1e7
     val_acc = 0
-    batch_size = 512
+    batch_size = 1024
     nb_classes = 7
     nb_epoch = 100
     training_stats = np.zeros((nb_epoch, 4))
@@ -148,10 +149,10 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
         print X_train.shape
         #print y_train.shape
 
-        print "Transforming X_train, X_test with ZCA"
-        X_train = np.dot(X_train.reshape(X_train.shape[0],X_train.shape[1]*X_train.shape[2]*X_train.shape[3]),ZCAMatrix)
+        #print "Transforming X_train, X_test with ZCA"
+        #X_train = np.dot(X_train.reshape(X_train.shape[0],X_train.shape[1]*X_train.shape[2]*X_train.shape[3]),ZCAMatrix)
         X_train = X_train.reshape(X_train.shape[0], 1, 32,32)
-        X_test = np.dot(X_test.reshape(X_test.shape[0],X_test.shape[1]*X_test.shape[2]*X_test.shape[3]),ZCAMatrix)
+        #X_test = np.dot(X_test.reshape(X_test.shape[0],X_test.shape[1]*X_test.shape[2]*X_test.shape[3]),ZCAMatrix)
         X_test = X_test.reshape(X_test.shape[0], 1, 32,32)
 
         # ShowMeans(X_train[2000:2004]) # Debug: Show faces after being processed
@@ -234,6 +235,10 @@ def main(model_type='CNN', model_checkpoint='model.yaml', weights_checkpoint='NN
     print score_list
     print score_list.mean()
     print "Last weights validation loss {:0.4f} accuracy {:0.4f}".format(val_loss, val_acc)
+    # Saving validation accuracies for fold
+    outfile = open('{:d}fold_val_acc.npy'.format(n_folds), 'w')
+    np.save(outfile, score_list)
+    outfile.close()
     return nn_list
 
 def test_model(model_checkpoint='model.yaml', weights_checkpoint='NNweights_8.h5', useZCA=False):
@@ -286,5 +291,5 @@ if __name__ == '__main__':
     #print "Using board {:d}".format(csutils.get_board())
     #main('CNN')
 
-    test_model(useZCA=True)
+    #test_model(useZCA=True)
     NN_bag_predict_unlabeled()
