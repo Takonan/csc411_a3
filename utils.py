@@ -747,6 +747,7 @@ def plot_kfold_validation_accuracy(data='fold_val_acc.npy'):
         i += 1
 
     print mean_acc_vec
+    print max_acc_vec
 
     plt.figure
     plt.plot(mean_acc_vec[:,0], mean_acc_vec[:,1], label='Avg Validation accuracy')

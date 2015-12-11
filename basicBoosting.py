@@ -96,7 +96,7 @@ def run_Bagging(num_estimator=10, num_iter=5, include_mirror=False, do_cv=False,
 
     return
 
-def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, reload=False):
+def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, reload=False, classifier='Perceptron'):
     ZCAMatrix = np.load('ZCAMatrix.npy')
 
     if not reload:
@@ -108,21 +108,30 @@ def run_Bagging_LabelKFold(num_estimator=10, num_iter=5, include_mirror=False, r
     else:
         inputs, targets, identities = reload_data_with_identity_normalized()
 
-    # myClassifier = LinearSVC()
-    # myClassifier = RidgeClassifier()
-    myClassifier = Perceptron(n_iter=num_iter)
+    if classifier == 'Perceptron':
+        myClassifier = Perceptron(n_iter=num_iter)
+    elif classifier == 'DecisionTree':
+        myClassifier = DecisionTreeClassifier()
+    elif classifier == 'LinearSVC':
+        myClassifier = LinearSVC()
+    elif classifier == 'RidgeClassifier':
+        myClassifier = RidgeClassifier()
+    else:
+        print "Classifier not recognized. Aborting..."
+        return
+
     # myClassifier = SGDClassifier(loss='perceptron',n_iter=num_iter)
     # myClassifier = OneVsRestClassifier(LinearSVC(random_state=0))
     clf = BaggingClassifier(base_estimator=myClassifier, n_estimators=num_estimator)
 
-    lkf = LabelKFold(identities, n_folds=3)
+    lkf = LabelKFold(identities, n_folds=10)
 
-    print "Starting cross validation testing on perceptron bagging with %d estimators" % (num_estimator)
+    print "Starting cross validation testing on %s bagging with %d estimators" % (classifier, num_estimator)
     scores = cross_val_score(clf, inputs, targets, cv=lkf)
     print scores
     print scores.mean()
 
-    return scores.mean()
+    return scores
 
 def run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True):
     inputs, targets, identities = load_data_with_identity(include_mirror)
@@ -142,30 +151,39 @@ def run_Bagging_testset(num_estimator=100, num_iter=25, include_mirror=True):
     save_output_csv("Perceptron_Bagging_test_predictions.csv", pred)
     return
 
-def run_Perceptron_NumEstimator_Experiment():
-    val_score_list = np.zeros(9)
+def run_Bagging_NumEstimator_Experiment(classifier='Perceptron'):
+    val_avg_score_list = np.zeros(9)
+    val_max_score_list = np.zeros(9)
+    val_scores_list = []
     num_estimator_list = np.array([1,2,3, 5, 10, 25, 50, 75, 100])
 
     for i in xrange(num_estimator_list.shape[0]):
         num_estimator = num_estimator_list[i]
         print "Number of num_estimator: ", num_estimator
-        score = run_Bagging_LabelKFold(num_estimator=num_estimator, num_iter=10, include_mirror=True)
+        score = run_Bagging_LabelKFold(num_estimator=num_estimator, num_iter=10, include_mirror=True, classifier=classifier)
         print "Average Validation score: ", score
-        val_score_list[i] = score
+        val_avg_score_list[i] = score.mean()
+        val_max_score_list[i] = score.max()
+        val_scores_list.append(score)
 
-    print "Val_score_list: "
-    print val_score_list
+    print "Val_avg_score_list: "
+    print val_avg_score_list
+    print "Val_max_score_list: "
+    print val_max_score_list
+    print "All scores:"
+    print val_scores_list
     print "num_estimator_list: "
     print num_estimator_list
 
     # Plot the data
     plt.figure()
-    plt.plot(num_estimator_list, val_score_list, label='Avg Validation Accuracy (3 fold)')
+    plt.plot(num_estimator_list, val_avg_score_list, label='Avg Validation Accuracy (10 fold)')
+    plt.plot(num_estimator_list, val_max_score_list, label='Max Validation Accuracy (10 fold)')
     plt.legend(loc=4)
-    plt.title('Perceptron Bagging Validation Accuray vs Number of Estimator')
+    plt.title('%s Bagging Validation Accuray vs Number of Estimator' % (classifier))
     plt.xlabel('Number of Estimators')
     plt.ylabel('Accuracy')
-    plt.savefig('Perceptron_Bagging_ValAcc_vs_NumEstimator')
+    plt.savefig('%s_Bagging_ValAcc_vs_NumEstimator.png' % classifier)
     plt.show()
 
     return
@@ -260,6 +278,5 @@ if __name__ == '__main__':
 
     # pca_SVM()
 
-    run_Perceptron_NumEstimator_Experiment()
-
+    run_Bagging_NumEstimator_Experiment(classifier='Perceptron')
 
